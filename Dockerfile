@@ -3,10 +3,11 @@
 # TanStack Start SSR bundled with Vite; runs on Node 20 (works fine on 22 too).
 
 # ---------- 1. Dependencies ----------
-FROM node:20-alpine AS deps
+FROM node:24-alpine AS deps
 WORKDIR /app
 RUN corepack enable && apk add --no-cache libc6-compat
 COPY package.json .npmrc bun.lock* package-lock.json* pnpm-lock.yaml* yarn.lock* ./
+COPY scripts/ ./scripts/
 RUN --mount=type=cache,target=/root/.npm \
     if [ -f bun.lock ]; then npm i -g bun && bun install --frozen-lockfile; \
     elif [ -f pnpm-lock.yaml ]; then corepack prepare pnpm@latest --activate && pnpm i --frozen-lockfile; \
@@ -14,7 +15,7 @@ RUN --mount=type=cache,target=/root/.npm \
     else npm ci; fi
 
 # ---------- 2. Build ----------
-FROM node:20-alpine AS build
+FROM node:24-alpine AS build
 WORKDIR /app
 ENV NODE_ENV=production
 COPY --from=deps /app/node_modules ./node_modules
@@ -37,7 +38,7 @@ ENV NITRO_PRESET=node-server
 RUN npm run build
 
 # ---------- 3. Runtime ----------
-FROM node:20-alpine AS runtime
+FROM node:24-alpine AS runtime
 ARG APP_VERSION=7.4.6
 LABEL org.opencontainers.image.title="WACRM" \
       org.opencontainers.image.description="WACRM omnichannel messaging platform" \
